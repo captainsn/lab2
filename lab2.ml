@@ -1,3 +1,5 @@
+open List ;;
+ 
 (* 
                               CS51 Lab 2
                     Polymorphism and record types
@@ -44,9 +46,11 @@ To think about before you start coding:
 Now implement the two functions curry and uncurry.
 ......................................................................*)
 
-let curry = fun _ -> failwith "curry not implemented" ;;
-     
-let uncurry = fun _ -> failwith "uncurry not implemented" ;;
+let curry (f : ('a * 'b) -> 'c) : ('a -> 'b -> 'c) =
+  fun (x : 'a) -> fun (y : 'b) -> f (x, y) ;;
+
+let uncurry (f : ('a -> 'b -> 'c)) : ('a * 'b) -> 'c = 
+  fun ((x, y) : ('a * 'b)) -> f x y ;;
 
 (*......................................................................
 Exercise 2: OCaml's built in binary operators, like ( + ) and ( * ) are
@@ -61,12 +65,9 @@ Using your uncurry function, define uncurried plus and times
 functions.
 ......................................................................*)
 
-let plus =
-  fun _ -> failwith "plus not implemented"
+let plus = uncurry ( + ) ;;
      
-let times =
-  fun _ -> failwith "times not implemented" ;;
-  
+let times = uncurry ( * ) ;;
 (*......................................................................
 Exercise 3: Recall the prods function from Lab 1:
 
@@ -79,8 +80,8 @@ Now reimplement prods using map and your uncurried times function. Why
 do you need the uncurried times function?
 ......................................................................*)
 
-let prods =
-  fun _ -> failwith "prods not implemented" ;; 
+let prods (lst : (int * int) list) : int list =
+  map times lst ;;
 
 (*======================================================================
 Part 2: Option types
@@ -113,8 +114,13 @@ Reimplement max_list, but this time, it should return an int option
 instead of an int.
 ......................................................................*)
 
-let max_list (lst : int list) : int option =
-  failwith "max_list not implemented" ;;
+let rec max_list (lst : int list) : int option =
+  match lst with
+  | [] -> None
+  | head :: tail -> 
+    match max_list tail with 
+    | None -> Some head 
+    | Some y -> Some (max head y) ;;
   
 (*......................................................................
 Exercise 5: Write a function to return the smaller of two int options,
@@ -124,7 +130,11 @@ useful.
 ......................................................................*)
 
 let min_option (x : int option) (y : int option) : int option =
-  failwith "min_option not implemented" ;;
+  match x, y with
+  | None, None -> None
+  | Some a, None -> x 
+  | None, Some b -> y
+  | Some a, Some b -> Some (min a b) ;;
      
 (*......................................................................
 Exercise 6: Write a function to return the larger of two int options, or
@@ -133,7 +143,11 @@ other.
 ......................................................................*)
 
 let max_option (x : int option) (y : int option) : int option =
-  failwith "max_option not implemented" ;;
+  match x, y with
+  | None, None -> None
+  | Some a, None -> x 
+  | None, Some b -> y
+  | Some a, Some b -> Some (max a b) ;;
 
 (*======================================================================
 Part 3: Polymorphism practice
