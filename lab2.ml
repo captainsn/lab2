@@ -167,19 +167,23 @@ result appropriately returned.
 What is calc_option's function signature? Implement calc_option.
 ......................................................................*)
 
-let calc_option =
-  fun _ -> failwith "calc_option not implemented" ;;
+let calc_option (f: 'a -> 'b -> 'c) (x: 'a option) (y: 'b option) : 'c option =
+match x, y with
+  | None, None -> None
+  | Some a, None -> x 
+  | None, Some b -> y
+  | Some a, Some b -> Some (f a b) ;;
      
 (*......................................................................
 Exercise 8: Now rewrite min_option and max_option using the higher-order
 function calc_option. Call them min_option_2 and max_option_2.
 ......................................................................*)
   
-let min_option_2 =
-  fun _ -> failwith "min_option_2 not implemented" ;;
+let min_option_2 (x: 'a option) (y: 'b option) : 'c option =
+  calc_option min x y;;
      
-let max_option_2 =
-  fun _ -> failwith "max_option_2 not implemented" ;;
+let max_option_2 (x: 'a option) (y: 'b option) : 'c option =
+  calc_option max x y;;
 
 (*......................................................................
 Exercise 9: Now that we have calc_option, we can use it in other
@@ -189,8 +193,8 @@ AND of two bool options, or None if both are None. If exactly one is
 None, return the other.
 ......................................................................*)
   
-let and_option =
-  fun _ -> failwith "and_option not implemented" ;;
+let and_option (x: bool option) (y: bool option) : bool option =
+  calc_option ( && ) x y ;;
   
 (*......................................................................
 Exercise 10: In Lab 1, you implemented a function zip that takes two
@@ -209,8 +213,10 @@ type of the result? Did you provide full typing information in the
 first line of the definition?
 ......................................................................*)
 
-let zip_exn =
-  fun _ -> failwith "zip_exn not implemented" ;;
+let rec zip_exn (x : 'a list) (y : 'b list) : ('a * 'b) list =
+  match x, y with
+  | [], [] -> []
+  | xhd :: xtl, yhd :: ytl -> (xhd, yhd) :: (zip_exn xtl ytl) ;;
 
 (*......................................................................
 Exercise 11: Another problem with the implementation of zip_exn is that,
@@ -221,8 +227,14 @@ generate an alternate solution without this property?
 Do so below in a new definition of zip.
 ......................................................................*)
 
-let zip =
-  fun _ -> failwith "zip not implemented" ;;
+let rec zip (x : 'a list) (y : 'b list) : (('a * 'b) list) option = 
+  match x, y with
+  | [], [] -> Some []
+  | xhd :: xtl, yhd :: ytl -> 
+      (match zip xtl ytl with 
+       | None -> None
+       | Some ztl -> Some ((xhd, yhd) :: ztl))
+  | _, _ -> None ;;
 
 (*====================================================================
 Part 4: Factoring out None-handling
@@ -255,7 +267,9 @@ adjusted for the result type. Implement the maybe function.
 ......................................................................*)
   
 let maybe (f : 'a -> 'b) (x : 'a option) : 'b option =
-  failwith "maybe not implemented" ;; 
+  match x with 
+  | None -> None
+  | Some a -> Some (f a) ;;
 
 (*......................................................................
 Exercise 13: Now reimplement dotprod to use the maybe function. (The
@@ -269,14 +283,19 @@ let sum : int list -> int =
   List.fold_left (+) 0 ;;
 
 let dotprod (a : int list) (b : int list) : int option =
-  failwith "dot_prod not implemented" ;; 
+  maybe sum (maybe prods (zip a b)) ;; 
 
 (*......................................................................
 Exercise 14: Reimplement zip along the same lines, in zip_2 below. 
 ......................................................................*)
 
 let rec zip_2 (x : int list) (y : int list) : ((int * int) list) option =
-  failwith "zip_2 not implemented" ;;
+  match x, y with
+  | [], [] -> Some []
+  | xhd :: xtl, yhd :: ytl -> 
+      maybe (fun ztl -> ((xhd, yhd) :: ztl))
+           (zip_2 xtl ytl)
+  | _, _ -> None ;;
 
 (*......................................................................
 Exercise 15: For the energetic, reimplement max_list along the same
@@ -285,7 +304,11 @@ function always passes along the None.
 ......................................................................*)
 
 let rec max_list_2 (lst : int list) : int option =
-  failwith "max_list not implemented" ;; 
+  match lst with
+  | [] -> None
+  | [single] -> Some single
+  | head :: tail -> 
+    maybe (fun tl -> max head tl) (max_list_2 tail) ;;
 
 (*======================================================================
 Part 5: Record types
@@ -333,7 +356,7 @@ For example:
 let transcript (enrollments : enrollment list)
                (student : int)
              : enrollment list =
-  failwith "transcript not implemented" ;;
+  filter (fun entry -> entry.id = student) enrollments ;;
   
 (*......................................................................
 Exercise 17: Define a function called ids that takes an enrollment
@@ -347,7 +370,7 @@ For example:
 ......................................................................*)
 
 let ids (enrollments: enrollment list) : int list =
-  failwith "ids not implemented" ;;
+  sort_uniq (compare) (map (fun entry -> entry.id) enrollments) ;;
   
 (*......................................................................
 Exercise 18: Define a function called verify that determines whether all
@@ -359,5 +382,11 @@ For example:
 - : bool = false
 ......................................................................*)
 
+let names (enrollments: enrollment list) : string list = 
+  sort_uniq (compare) (map (fun entry -> entry.name) enrollments) ;;
+
 let verify (enrollments : enrollment list) : bool =
-  failwith "verify not implemented" ;;
+  for_all (fun l -> (length l) = 1)
+               (map
+                  (fun student -> names (transcript enrollments student))
+                  (ids enrollments)) ;;
