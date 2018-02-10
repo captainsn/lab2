@@ -132,8 +132,8 @@ useful.
 let min_option (x : int option) (y : int option) : int option =
   match x, y with
   | None, None -> None
-  | Some a, None -> x 
-  | None, Some b -> y
+  | Some _, None -> x 
+  | None, Some _ -> y
   | Some a, Some b -> Some (min a b) ;;
      
 (*......................................................................
@@ -145,8 +145,8 @@ other.
 let max_option (x : int option) (y : int option) : int option =
   match x, y with
   | None, None -> None
-  | Some a, None -> x 
-  | None, Some b -> y
+  | Some _, None -> x 
+  | None, Some _ -> y
   | Some a, Some b -> Some (max a b) ;;
 
 (*======================================================================
@@ -170,8 +170,8 @@ What is calc_option's function signature? Implement calc_option.
 let calc_option (f: 'a -> 'b -> 'c) (x: 'a option) (y: 'b option) : 'c option =
 match x, y with
   | None, None -> None
-  | Some a, None -> x 
-  | None, Some b -> y
+  | Some _, None -> x 
+  | None, Some _ -> y
   | Some a, Some b -> Some (f a b) ;;
      
 (*......................................................................
