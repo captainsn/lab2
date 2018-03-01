@@ -185,7 +185,7 @@ type of the result? Did you provide full typing information in the
 first line of the definition?
 ......................................................................*)
 
-let rec zip_exn (x : 'a list) (y : 'a list) : ('a * 'a) list =
+let rec zip_exn (x : 'a list) (y : 'b list) : ('a * 'b) list =
   match x, y with
   | [], [] -> []
   | h1 :: t1, h2 :: t2 -> (h1, h2) :: zip_exn t1 t2
@@ -199,7 +199,7 @@ generate an alternate solution without this property?
 Do so below in a new definition of zip.
 ......................................................................*)
 
-let rec zip (x : 'a list) (y : 'a list) : ('a * 'a) list option =
+let rec zip (x : 'a list) (y : 'b list) : ('a * 'b) list option =
   match x, y with
   | [], [] -> Some []
   | h1 :: t1, h2 :: t2 -> 
