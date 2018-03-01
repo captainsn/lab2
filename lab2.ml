@@ -1,5 +1,4 @@
 open List ;;
- 
 (* 
                               CS51 Lab 2
                     Polymorphism and record types
@@ -9,22 +8,17 @@ open List ;;
 
 (*
 Objective:
-
 In this lab, you'll exercise your understanding of polymorphism and
 record types. Some of the problems extend those from Lab 1, but we'll
 provide the necessary background code from that lab.
-
 During the lab session, we recommend that you work on the following
 exercises in this order:
-
 1-5; 7; 9-11; 16-17
-
 and complete the remaining ones at your leisure.
  *)
 
 (*======================================================================
 Part 1: Currying and uncurrying
-
 ........................................................................
 Exercise 1: In this exercise, you'll define higher-order functions
 curry and uncurry for currying and uncurrying binary functions
@@ -32,95 +26,78 @@ curry and uncurry for currying and uncurrying binary functions
 mathematician Haskell Curry '1920. (By way of reminder, a curried
 function takes its arguments one at a time. An uncurried function
 takes them all at once in a tuple.)
-
 To think about before you start coding:
-
   * What should the types of curry and uncurry be?
-
   * What is an example of a function that curry could apply to?
     Uncurry?
-
   * What are some tests that you could try to verify that your
     implementations of curry and uncurry work properly?
-
 Now implement the two functions curry and uncurry.
 ......................................................................*)
 
-let curry (f : ('a * 'b) -> 'c) : ('a -> 'b -> 'c) =
+let curry (f : ('a * 'b) -> 'c) : 'a -> 'b -> 'c = 
   fun (x : 'a) -> fun (y : 'b) -> f (x, y) ;;
-
-let uncurry (f : ('a -> 'b -> 'c)) : ('a * 'b) -> 'c = 
-  fun ((x, y) : ('a * 'b)) -> f x y ;;
-
+     
+let uncurry (f : 'a -> 'b -> 'c) : ('a * 'b) -> 'c = 
+  fun (x, y : 'a * 'b) -> f x y ;;
 (*......................................................................
 Exercise 2: OCaml's built in binary operators, like ( + ) and ( * ) are
 curried:
-
 # ( + ) ;;
 - : int -> int -> int = <fun>
 # ( * ) ;;
 - : int -> int -> int = <fun>
-
 Using your uncurry function, define uncurried plus and times
 functions.
 ......................................................................*)
 
-let plus = uncurry ( + ) ;;
+let plus : int * int -> int = uncurry ( + ) ;;
      
-let times = uncurry ( * ) ;;
+let times : int * int -> int = uncurry ( * ) ;;
+  
 (*......................................................................
 Exercise 3: Recall the prods function from Lab 1:
-
 let rec prods (lst : (int * int) list) : int list =
   match lst with
   | [] -> []
   | (x, y) :: tail -> (x * y) :: (prods tail) ;;
-
 Now reimplement prods using map and your uncurried times function. Why
 do you need the uncurried times function?
 ......................................................................*)
 
-let prods (lst : (int * int) list) : int list =
-  map times lst ;;
+let prods : ((int * int) list) -> int list = map times ;; 
 
 (*======================================================================
 Part 2: Option types
-
 In Lab 1, you implemented a function max_list that returns the maximum
 element in a non-empty integer list. Here's a possible implementation
 for max_list:
-
 let rec max_list (lst : int list) : int =
   match lst with
   | [elt] -> elt
   | head :: tail -> max head (max_list tail) ;;
-
 (This implementation makes use of the polymorphic max function from
 the Pervasives module.)
-
 As written, this function generates a warning that the match is not
 exhaustive. Why? What's an example of the missing case? Try entering
 the function in ocaml and see what information you can glean from the
 warning message.
-
 The problem is that there is no reasonable value for the maximum
 element in an empty list. This is an ideal application for option
 types.
-
 ........................................................................
 Exercise 4: 
-
 Reimplement max_list, but this time, it should return an int option
 instead of an int.
 ......................................................................*)
 
 let rec max_list (lst : int list) : int option =
-  match lst with
+  match lst with 
   | [] -> None
-  | head :: tail -> 
-    match max_list tail with 
-    | None -> Some head 
-    | Some y -> Some (max head y) ;;
+  | hd :: tl ->
+    match max_list tl with
+    | None -> Some hd
+    | Some n -> Some (max hd n) ;;
   
 (*......................................................................
 Exercise 5: Write a function to return the smaller of two int options,
@@ -131,10 +108,10 @@ useful.
 
 let min_option (x : int option) (y : int option) : int option =
   match x, y with
-  | None, None -> None
-  | Some _, None -> x 
+  | Some a, Some b -> Some (min a b)
+  | Some _, None -> x
   | None, Some _ -> y
-  | Some a, Some b -> Some (min a b) ;;
+  | None, None -> None ;;
      
 (*......................................................................
 Exercise 6: Write a function to return the larger of two int options, or
@@ -144,18 +121,16 @@ other.
 
 let max_option (x : int option) (y : int option) : int option =
   match x, y with
-  | None, None -> None
-  | Some _, None -> x 
+  | Some a, Some b -> Some (max a b)
+  | Some _, None -> x
   | None, Some _ -> y
-  | Some a, Some b -> Some (max a b) ;;
+  | None, None -> None ;;
 
 (*======================================================================
 Part 3: Polymorphism practice
-
 ........................................................................
 Exercise 7: Do you see a pattern in your implementations of min_option
 and max_option? How can we factor out similar code?  
-
 Write a higher-order function for binary operations on options taking
 three arguments in order: the binary operation (a curried function)
 and its first and second argument. If both arguments are None, return
@@ -163,27 +138,27 @@ None.  If one argument is (Some x) and the other argument is None,
 function should return (Some x). If neither argument is none, the
 binary operation should be applied to the argument values and the
 result appropriately returned. 
-
 What is calc_option's function signature? Implement calc_option.
 ......................................................................*)
 
-let calc_option (f: 'a -> 'b -> 'c) (x: 'a option) (y: 'b option) : 'c option =
-match x, y with
-  | None, None -> None
-  | Some _, None -> x 
+let calc_option (f : 'a -> 'a -> 'a) 
+                (x : 'a option) 
+                (y : 'b option)
+              : 'a option =
+  match x, y with
+  | Some a, Some b -> Some (f a b)
+  | Some _, None -> x
   | None, Some _ -> y
-  | Some a, Some b -> Some (f a b) ;;
+  | None, None -> None ;; 
      
 (*......................................................................
 Exercise 8: Now rewrite min_option and max_option using the higher-order
 function calc_option. Call them min_option_2 and max_option_2.
 ......................................................................*)
   
-let min_option_2 (x: 'a option) (y: 'b option) : 'c option =
-  calc_option min x y;;
+let min_option_2 : int option -> int option -> int option = calc_option min ;;
      
-let max_option_2 (x: 'a option) (y: 'b option) : 'c option =
-  calc_option max x y;;
+let max_option_2 : int option -> int option -> int option = calc_option max ;;
 
 (*......................................................................
 Exercise 9: Now that we have calc_option, we can use it in other
@@ -193,69 +168,61 @@ AND of two bool options, or None if both are None. If exactly one is
 None, return the other.
 ......................................................................*)
   
-let and_option (x: bool option) (y: bool option) : bool option =
-  calc_option ( && ) x y ;;
+let and_option : bool option -> bool option -> bool option = calc_option ( && ) ;;
   
 (*......................................................................
 Exercise 10: In Lab 1, you implemented a function zip that takes two
 lists and "zips" them together into a list of pairs. Here's a possible
 implementation of zip (here renamed zip_exn to distinguish it
 from the zip you'll implement below, which has a different signature):
-
 let rec zip_exn (x : int list) (y : int list) : (int * int) list =
   match x, y with
   | [], [] -> []
   | xhd :: xtl, yhd :: ytl -> (xhd, yhd) :: (zip_exn xtl ytl) ;;
-
 As implemented, this function works only on integer lists. Revise your
 solution to operate polymorphically on lists of any type. What is the
 type of the result? Did you provide full typing information in the
 first line of the definition?
 ......................................................................*)
 
-let rec zip_exn (x : 'a list) (y : 'b list) : ('a * 'b) list =
+let rec zip_exn (x : 'a list) (y : 'a list) : ('a * 'a) list =
   match x, y with
   | [], [] -> []
-  | xhd :: xtl, yhd :: ytl -> (xhd, yhd) :: (zip_exn xtl ytl) ;;
+  | h1 :: t1, h2 :: t2 -> (h1, h2) :: zip_exn t1 t2
+  | _, _ -> raise (Invalid_argument "mismatched length list") ;;
 
 (*......................................................................
 Exercise 11: Another problem with the implementation of zip_exn is that,
 once again, its match is not exhaustive and it raises an exception
 when given lists of unequal length. How can you use option types to
 generate an alternate solution without this property? 
-
 Do so below in a new definition of zip.
 ......................................................................*)
 
-let rec zip (x : 'a list) (y : 'b list) : (('a * 'b) list) option = 
+let rec zip (x : 'a list) (y : 'a list) : ('a * 'a) list option =
   match x, y with
   | [], [] -> Some []
-  | xhd :: xtl, yhd :: ytl -> 
-      (match zip xtl ytl with 
-       | None -> None
-       | Some ztl -> Some ((xhd, yhd) :: ztl))
+  | h1 :: t1, h2 :: t2 -> 
+    (match zip t1 t2 with
+    | None -> None
+    | Some lst -> Some ((h1, h2) :: lst))
   | _, _ -> None ;;
 
 (*====================================================================
 Part 4: Factoring out None-handling
-
 Recall the definition of dot_prod from Lab 1. Here it is adjusted to
 an option type:
-
 let dotprod (a : int list) (b : int list) : int option =
   let pairsopt = zip a b in
   match pairsopt with
   | None -> None
   | Some pairs -> Some (sum (prods pairs)) ;;
-
 Also recall zip from Exercise 8 above.
-
 Notice how in these functions we annoyingly have to test if a value of
 option type is None, requiring a separate match, and passing on the
 None value in the "bad" branch or introducing the Some in the "good"
 branch. This is something we're likely to be doing a lot of. Let's
 factor that out to simplify the implementation.
-
 ........................................................................
 Exercise 12: Define a function called maybe that takes a function of 
 type 'a -> 'b and an argument of type 'a option, and "maybe" (depending
@@ -269,7 +236,7 @@ adjusted for the result type. Implement the maybe function.
 let maybe (f : 'a -> 'b) (x : 'a option) : 'b option =
   match x with 
   | None -> None
-  | Some a -> Some (f a) ;;
+  | Some a -> Some (f a) ;; 
 
 (*......................................................................
 Exercise 13: Now reimplement dotprod to use the maybe function. (The
@@ -283,7 +250,9 @@ let sum : int list -> int =
   List.fold_left (+) 0 ;;
 
 let dotprod (a : int list) (b : int list) : int option =
-  maybe sum (maybe prods (zip a b)) ;; 
+  zip a b
+  |> maybe prods
+  |> maybe sum ;; 
 
 (*......................................................................
 Exercise 14: Reimplement zip along the same lines, in zip_2 below. 
@@ -291,10 +260,8 @@ Exercise 14: Reimplement zip along the same lines, in zip_2 below.
 
 let rec zip_2 (x : int list) (y : int list) : ((int * int) list) option =
   match x, y with
-  | [], [] -> Some []
-  | xhd :: xtl, yhd :: ytl -> 
-      maybe (fun ztl -> ((xhd, yhd) :: ztl))
-           (zip_2 xtl ytl)
+  | [], [] -> Some [] 
+  | h1 :: t1, h2 :: t2 -> maybe (fun ztl -> (h1, h2) :: ztl) (zip_2 t1 t2) 
   | _, _ -> None ;;
 
 (*......................................................................
@@ -306,13 +273,11 @@ function always passes along the None.
 let rec max_list_2 (lst : int list) : int option =
   match lst with
   | [] -> None
-  | [single] -> Some single
-  | head :: tail -> 
-    maybe (fun tl -> max head tl) (max_list_2 tail) ;;
+  | [x] -> Some x 
+  | hd :: tl -> maybe (fun max_tl -> max hd max_tl) (max_list_2 tl) ;; 
 
 (*======================================================================
 Part 5: Record types
-
 A college wants to store student records in a simple database,
 implemented as a list of individual course enrollments. The
 enrollments themselves are implemented as a record type, called
@@ -340,12 +305,10 @@ let college =
 (* In the following exercises, you'll want to avail yourself of the
 List module functions, writing the requested functions in higher-order
 style rather than handling the recursion yourself.
-
 ........................................................................
 Exercise 16: Define a function called transcript that takes an
 enrollment list and returns a list of all the enrollments for a given
 student as specified with his or her id.
-
 For example: 
 # transcript college 5 ;;
 - : enrollment list =
@@ -363,7 +326,6 @@ Exercise 17: Define a function called ids that takes an enrollment
 list and returns a list of all the id numbers in that enrollment list,
 eliminating any duplicates. The sort_uniq function from the List
 module may be useful here.
-
 For example:
 # ids college ;;
 - : int list = [1; 2; 5]
@@ -376,7 +338,6 @@ let ids (enrollments: enrollment list) : int list =
 Exercise 18: Define a function called verify that determines whether all
 the entries in an enrollment list for each of the ids appearing in the
 list have the same name associated.
-
 For example: 
 # verify college ;;
 - : bool = false
@@ -386,7 +347,6 @@ let names (enrollments: enrollment list) : string list =
   sort_uniq (compare) (map (fun entry -> entry.name) enrollments) ;;
 
 let verify (enrollments : enrollment list) : bool =
-  for_all (fun l -> (length l) = 1)
-               (map
-                  (fun student -> names (transcript enrollments student))
-                  (ids enrollments)) ;;
+  List.for_all (fun lst -> length lst = 1)
+               (List.map (fun student -> names (transcript enrollments student)) 
+                         (ids enrollments)) ;;
