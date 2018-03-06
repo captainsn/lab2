@@ -95,7 +95,10 @@ let rec max_list (lst : int list) : int option =
   match lst with
   | [] -> None
   | [x] -> Some x
-  | hd :: tl -> Some (max hd (max_list tl)) ;;
+  | hd :: tl -> 
+    match max_list tl with
+    | None -> None
+    | Some n -> (max hd n) ;;
   
 (*......................................................................
 Exercise 5: Write a function to return the smaller of two int options,
