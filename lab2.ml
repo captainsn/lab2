@@ -1,10 +1,9 @@
-open List ;;
 (* 
                               CS51 Lab 2
                     Polymorphism and record types
                              Spring 2018
  *)
-
+open List ;;
 
 (*
 Objective:
@@ -35,11 +34,12 @@ To think about before you start coding:
 Now implement the two functions curry and uncurry.
 ......................................................................*)
 
-let curry (f : ('a * 'b) -> 'c) : 'a -> 'b -> 'c = 
-  fun (x : 'a) -> fun (y : 'b) -> f (x, y) ;;
+let curry (uncurried : 'a * 'b -> 'c) : 'a -> 'b -> 'c = 
+  fun x -> fun y -> uncurried (x, y);;
      
-let uncurry (f : 'a -> 'b -> 'c) : ('a * 'b) -> 'c = 
-  fun (x, y : 'a * 'b) -> f x y ;;
+let uncurry (curried: 'a -> 'b -> 'c) : 'a * 'b -> 'c = 
+  fun (x, y) -> curried x y ;;
+
 (*......................................................................
 Exercise 2: OCaml's built in binary operators, like ( + ) and ( * ) are
 curried:
@@ -51,9 +51,9 @@ Using your uncurry function, define uncurried plus and times
 functions.
 ......................................................................*)
 
-let plus : int * int -> int = uncurry ( + ) ;;
+let plus = uncurry ( + ) ;;
      
-let times : int * int -> int = uncurry ( * ) ;;
+let times = uncurry ( * ) ;;
   
 (*......................................................................
 Exercise 3: Recall the prods function from Lab 1:
@@ -65,7 +65,7 @@ Now reimplement prods using map and your uncurried times function. Why
 do you need the uncurried times function?
 ......................................................................*)
 
-let prods : ((int * int) list) -> int list = map times ;; 
+let prods : (int * int) list -> int list = map times ;; 
 
 (*======================================================================
 Part 2: Option types
@@ -92,12 +92,10 @@ instead of an int.
 ......................................................................*)
 
 let rec max_list (lst : int list) : int option =
-  match lst with 
+  match lst with
   | [] -> None
-  | hd :: tl ->
-    match max_list tl with
-    | None -> Some hd
-    | Some n -> Some (max hd n) ;;
+  | [x] -> Some x
+  | hd :: tl -> Some (max hd (max_list tl)) ;;
   
 (*......................................................................
 Exercise 5: Write a function to return the smaller of two int options,
@@ -108,10 +106,10 @@ useful.
 
 let min_option (x : int option) (y : int option) : int option =
   match x, y with
+  | None, None -> None
   | Some a, Some b -> Some (min a b)
   | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None ;;
+  | None, Some _ -> y ;;
      
 (*......................................................................
 Exercise 6: Write a function to return the larger of two int options, or
@@ -121,10 +119,10 @@ other.
 
 let max_option (x : int option) (y : int option) : int option =
   match x, y with
+  | None, None -> None
   | Some a, Some b -> Some (max a b)
   | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None ;;
+  | None, Some _ -> y ;;
 
 (*======================================================================
 Part 3: Polymorphism practice
@@ -141,24 +139,26 @@ result appropriately returned.
 What is calc_option's function signature? Implement calc_option.
 ......................................................................*)
 
-let calc_option (f : 'a -> 'a -> 'a) 
-                (x : 'a option) 
+let calc_option (f : 'a -> 'b -> 'c) 
+                (x : 'a option)
                 (y : 'b option)
-              : 'a option =
+              : 'c option = 
   match x, y with
+  | None, None -> None
   | Some a, Some b -> Some (f a b)
   | Some _, None -> x
-  | None, Some _ -> y
-  | None, None -> None ;; 
+  | None, Some _ -> y ;;
      
 (*......................................................................
 Exercise 8: Now rewrite min_option and max_option using the higher-order
 function calc_option. Call them min_option_2 and max_option_2.
 ......................................................................*)
   
-let min_option_2 : int option -> int option -> int option = calc_option min ;;
+let min_option_2 : int option -> int option -> int option = 
+  calc_option min ;;
      
-let max_option_2 : int option -> int option -> int option = calc_option max ;;
+let max_option_2 : int option -> int option -> int option = 
+  calc_option max ;; 
 
 (*......................................................................
 Exercise 9: Now that we have calc_option, we can use it in other
@@ -168,7 +168,8 @@ AND of two bool options, or None if both are None. If exactly one is
 None, return the other.
 ......................................................................*)
   
-let and_option : bool option -> bool option -> bool option = calc_option ( && ) ;;
+let and_option : bool option -> bool option -> bool option =
+  calc_option ( && ) ;;
   
 (*......................................................................
 Exercise 10: In Lab 1, you implemented a function zip that takes two
@@ -188,8 +189,8 @@ first line of the definition?
 let rec zip_exn (x : 'a list) (y : 'b list) : ('a * 'b) list =
   match x, y with
   | [], [] -> []
-  | h1 :: t1, h2 :: t2 -> (h1, h2) :: zip_exn t1 t2
-  | _, _ -> raise (Invalid_argument "mismatched length list") ;;
+  | h1 :: t1, h2 :: t2 -> (h1, h2) :: (zip _exn t1 t2)
+  | _, _ -> raise (Invalid_argument "mismatched list lengths");;
 
 (*......................................................................
 Exercise 11: Another problem with the implementation of zip_exn is that,
@@ -204,8 +205,8 @@ let rec zip (x : 'a list) (y : 'b list) : ('a * 'b) list option =
   | [], [] -> Some []
   | h1 :: t1, h2 :: t2 -> 
     (match zip t1 t2 with
-    | None -> None
-    | Some lst -> Some ((h1, h2) :: lst))
+    | Some lst -> Some ((h1, h2) :: lst)
+    | None -> None)
   | _, _ -> None ;;
 
 (*====================================================================
@@ -234,9 +235,9 @@ adjusted for the result type. Implement the maybe function.
 ......................................................................*)
   
 let maybe (f : 'a -> 'b) (x : 'a option) : 'b option =
-  match x with 
+  match x with
   | None -> None
-  | Some a -> Some (f a) ;; 
+  | Some y -> Some (f y) ;; 
 
 (*......................................................................
 Exercise 13: Now reimplement dotprod to use the maybe function. (The
@@ -259,9 +260,10 @@ Exercise 14: Reimplement zip along the same lines, in zip_2 below.
 ......................................................................*)
 
 let rec zip_2 (x : int list) (y : int list) : ((int * int) list) option =
-  match x, y with
-  | [], [] -> Some [] 
-  | h1 :: t1, h2 :: t2 -> maybe (fun ztl -> (h1, h2) :: ztl) (zip_2 t1 t2) 
+  match x, y with 
+  | [], [] -> Some []
+  | h1 :: t1, h2 :: t2 -> 
+    maybe (fun a -> (h1, h2) :: a) (zip_2 t1 t2)
   | _, _ -> None ;;
 
 (*......................................................................
@@ -271,10 +273,10 @@ function always passes along the None.
 ......................................................................*)
 
 let rec max_list_2 (lst : int list) : int option =
-  match lst with
+  match lst with 
   | [] -> None
-  | [x] -> Some x 
-  | hd :: tl -> maybe (fun max_tl -> max hd max_tl) (max_list_2 tl) ;; 
+  | [x] -> Some x
+  | hd :: tl -> maybe (max hd) (max_list_2 tl) ;; 
 
 (*======================================================================
 Part 5: Record types
@@ -315,6 +317,7 @@ For example:
 [{name = "Sandy"; id = 5; course = "ls1b"};
  {name = "Sandy"; id = 5; course = "cs51"}]
 ......................................................................*)
+open List ;;
 
 let transcript (enrollments : enrollment list)
                (student : int)
@@ -332,7 +335,8 @@ For example:
 ......................................................................*)
 
 let ids (enrollments: enrollment list) : int list =
-  sort_uniq (compare) (map (fun entry -> entry.id) enrollments) ;;
+  map (fun entry -> entry.id) enrollments
+  |> sort_uniq (compare);;
   
 (*......................................................................
 Exercise 18: Define a function called verify that determines whether all
@@ -342,11 +346,11 @@ For example:
 # verify college ;;
 - : bool = false
 ......................................................................*)
-
-let names (enrollments: enrollment list) : string list = 
-  sort_uniq (compare) (map (fun entry -> entry.name) enrollments) ;;
+let names (trscript : enrollment list) : string list =
+  map (fun entry -> entry.name) trscript
+  |> sort_uniq (compare) ;;
 
 let verify (enrollments : enrollment list) : bool =
-  List.for_all (fun lst -> length lst = 1)
-               (List.map (fun student -> names (transcript enrollments student)) 
-                         (ids enrollments)) ;;
+  ids enrollments
+  |> map (fun id -> transcript enrollments id)
+  |> for_all (fun lst -> length (names lst) = 1) ;;
