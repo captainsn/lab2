@@ -192,7 +192,7 @@ first line of the definition?
 let rec zip_exn (x : 'a list) (y : 'b list) : ('a * 'b) list =
   match x, y with
   | [], [] -> []
-  | h1 :: t1, h2 :: t2 -> (h1, h2) :: (zip _exn t1 t2)
+  | h1 :: t1, h2 :: t2 -> (h1, h2) :: (zip_exn t1 t2)
   | _, _ -> raise (Invalid_argument "mismatched list lengths");;
 
 (*......................................................................
